@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, User, KeyRound, BarChart3, Building2, LogOut, ChevronRight } from "lucide-react";
+import { X, User, KeyRound, BarChart3, Building2, LogOut, ChevronRight, Users, Inbox } from "lucide-react";
 import { useAuth } from "@/shell/auth/AuthContext";
 
 type Props = {
@@ -51,11 +51,23 @@ export function ProfileSheet({ open, onClose }: Props) {
 
         {/* 메뉴 항목 */}
         <nav className="rounded-xl border border-border bg-card overflow-hidden mb-4">
+          {auth?.bankRole === "bank_manager" && (
+            <>
+              <MenuItem icon={Users} label="팀 홈" onClick={() => go("/team")} />
+              <Divider />
+              <MenuItem icon={Inbox} label="전체 상담 (팀)" onClick={() => go("/inbox")} />
+              <Divider />
+            </>
+          )}
           <MenuItem icon={User} label="프로필" onClick={() => go("/profile")} />
           <Divider />
           <MenuItem icon={KeyRound} label="비밀번호 변경" onClick={() => go("/profile/password")} />
           <Divider />
-          <MenuItem icon={BarChart3} label="이번달 실적" onClick={() => go("/performance")} />
+          <MenuItem
+            icon={BarChart3}
+            label={auth?.bankRole === "bank_manager" ? "팀 실적" : "이번달 실적"}
+            onClick={() => go("/performance")}
+          />
           <Divider />
           <MenuItem icon={Building2} label="단지 협약 정보" onClick={() => go("/complex-profiles")} />
         </nav>

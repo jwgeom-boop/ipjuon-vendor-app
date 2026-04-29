@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/shell/auth/AuthContext";
+import { AuthProvider, useAuth } from "@/shell/auth/AuthContext";
 import { RequireAuth } from "@/shell/auth/RequireAuth";
 import { MobileShell } from "@/shell/layout/MobileShell";
 import { FullScreenShell } from "@/shell/layout/FullScreenShell";
@@ -20,6 +20,16 @@ import PerformancePage from "@/modules/bank/performance/PerformancePage";
 import ComplexProfilesPage from "@/modules/bank/complex/ComplexProfilesPage";
 import RepaymentSharePage from "@/modules/bank/share/RepaymentSharePage";
 import LegalAgentSharePage from "@/modules/bank/share/LegalAgentSharePage";
+import TeamHomePage from "@/modules/bank/team/TeamHomePage";
+
+function HomeRedirect() {
+  const { auth } = useAuth();
+  // 팀장은 팀 홈, 상담사는 인박스
+  if (auth?.bankRole === "bank_manager") {
+    return <TeamHomePage />;
+  }
+  return <Navigate to="/inbox" replace />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +50,8 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
 
             <Route element={<RequireAuth><MobileShell /></RequireAuth>}>
-              <Route path="/" element={<Navigate to="/inbox" replace />} />
+              <Route path="/" element={<HomeRedirect />} />
+              <Route path="/team" element={<TeamHomePage />} />
               <Route path="/inbox" element={<InboxList />} />
               <Route path="/inbox/:id" element={<InboxDetail />} />
               <Route path="/notifications" element={<NotificationsPage />} />
@@ -60,7 +71,7 @@ export default function App() {
               <Route path="/inbox/:id/legal-share" element={<LegalAgentSharePage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/inbox" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-center" />

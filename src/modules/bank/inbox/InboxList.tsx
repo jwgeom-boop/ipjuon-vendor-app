@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Menu as MenuIcon, Search } from "lucide-react";
+import { Plus, Menu as MenuIcon, Search, Users } from "lucide-react";
 import { api } from "@/shell/api/client";
 import { useAuth } from "@/shell/auth/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -27,19 +27,43 @@ const STAGE_FILTERS: Array<{ key: LoanStatus | "all"; label: string }> = [
 export default function InboxList() {
   const navigate = useNavigate();
   const { auth } = useAuth();
-  const [stage, setStage] = useState<LoanStatus | "all">("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isManager = auth?.bankRole === "bank_manager";
+  const [stage, setStage] = useState<LoanStatus | "all">(
+    () => (searchParams.get("stage") as LoanStatus | null) ?? "all"
+  );
   const [search, setSearch] = useState("");
   const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(
+    () => searchParams.get("assignee") || "ALL"
+  );
 
   const { data, isLoading, isError, refetch } = useQuery<Consultation[]>({
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
 
+  // URL search param 동기화 (팀 홈에서 팀원 선택 → 인박스로 진입 시 반영)
+  useEffect(() => {
+    const a = searchParams.get("assignee");
+    if (a && a !== assigneeFilter) setAssigneeFilter(a);
+  }, [searchParams, assigneeFilter]);
+
+  const assigneeOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of data ?? []) {
+      if (r.manager?.trim()) set.add(r.manager.trim());
+    }
+    return ["ALL", ...Array.from(set).sort()];
+  }, [data]);
+
   const filtered = useMemo(() => {
     let rows = data ?? [];
+    if (isManager && assigneeFilter !== "ALL") {
+      rows = rows.filter((r) => (r.manager ?? "").trim() === assigneeFilter);
+    }
     if (kpiFilter) {
       rows = filterByKpi(rows, kpiFilter);
     } else if (stage !== "all") {
@@ -59,7 +83,18 @@ export default function InboxList() {
       const bt = b.stage_changed_at || b.created_at || "";
       return bt.localeCompare(at);
     });
-  }, [data, stage, search, kpiFilter]);
+  }, [data, stage, search, kpiFilter, assigneeFilter, isManager]);
+
+  function changeAssignee(v: string) {
+    setAssigneeFilter(v);
+    if (v === "ALL") {
+      searchParams.delete("assignee");
+      setSearchParams(searchParams, { replace: true });
+    } else {
+      searchParams.set("assignee", v);
+      setSearchParams(searchParams, { replace: true });
+    }
+  }
 
   return (
     <div>
@@ -100,6 +135,28 @@ export default function InboxList() {
               className="h-10 pl-9"
             />
           </div>
+
+          {isManager && assigneeOptions.length > 2 && (
+            <div className="mt-2 overflow-x-auto">
+              <div className="flex gap-1.5 min-w-max">
+                {assigneeOptions.map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => changeAssignee(a)}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border whitespace-nowrap",
+                      assigneeFilter === a
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border"
+                    )}
+                  >
+                    {a !== "ALL" && <Users className="w-3 h-3" />}
+                    {a === "ALL" ? "팀 전체" : a}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <KpiStrip rows={data ?? []} active={kpiFilter} onSelect={(k) => { setKpiFilter(k); if (k) setStage("all"); }} />
@@ -142,6 +199,7 @@ export default function InboxList() {
           <ConsultationRow
             key={row.id}
             row={row}
+            showAssignee={isManager && assigneeFilter === "ALL"}
             onClick={() => navigate(`/inbox/${row.id}`)}
           />
         ))}
@@ -150,7 +208,15 @@ export default function InboxList() {
   );
 }
 
-function ConsultationRow({ row, onClick }: { row: Consultation; onClick: () => void }) {
+function ConsultationRow({
+  row,
+  showAssignee,
+  onClick,
+}: {
+  row: Consultation;
+  showAssignee?: boolean;
+  onClick: () => void;
+}) {
   const status = (row.loan_status ?? "apply") as LoanStatus;
   const hasResidentAction = !!row.resident_last_action_at;
   return (
@@ -160,9 +226,14 @@ function ConsultationRow({ row, onClick }: { row: Consultation; onClick: () => v
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-[15px] font-semibold text-foreground truncate">{row.resident_name}</p>
             {hasResidentAction && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" aria-label="신규" />}
+            {showAssignee && row.manager && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                {row.manager}
+              </span>
+            )}
           </div>
           <p className="text-[11.5px] text-muted-foreground mt-0.5 truncate">
             {row.complex_name || "-"}

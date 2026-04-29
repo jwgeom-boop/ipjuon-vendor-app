@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   if (isAuthenticated) {
-    const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || "/inbox";
+    const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || "/";
     navigate(from, { replace: true });
     return null;
   }
@@ -35,7 +35,7 @@ export default function LoginPage() {
     } else {
       toast.success("로그인되었습니다.");
     }
-    const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || "/inbox";
+    const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || "/";
     navigate(from, { replace: true });
   }
 
