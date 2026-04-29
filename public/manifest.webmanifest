@@ -1,0 +1,11 @@
+{
+  "name": "입주ON 업체 (은행)",
+  "short_name": "입주ON 업체",
+  "description": "입주ON 협약은행 상담 관리 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a1a",
+  "lang": "ko"
+}
