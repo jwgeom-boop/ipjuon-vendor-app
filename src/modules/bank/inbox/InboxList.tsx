@@ -12,6 +12,8 @@ import { formatWon } from "../format";
 import { KpiStrip, filterByKpi, type KpiKey } from "./KpiStrip";
 import { NewCustomerSheet } from "../customers/NewCustomerSheet";
 import { ProfileSheet } from "../profile/ProfileSheet";
+import { ErrorState } from "@/shell/ui/ErrorState";
+import { ConsultationListSkeleton } from "@/shell/ui/Skeleton";
 
 const STAGE_FILTERS: Array<{ key: LoanStatus | "all"; label: string }> = [
   { key: "all", label: "전체" },
@@ -40,7 +42,7 @@ export default function InboxList() {
     () => searchParams.get("assignee") || "ALL"
   );
 
-  const { data, isLoading, isError, refetch } = useQuery<Consultation[]>({
+  const { data, isLoading, isError, refetch, error } = useQuery<Consultation[]>({
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
@@ -185,13 +187,8 @@ export default function InboxList() {
       <ProfileSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <div className="px-3 py-3 space-y-2">
-        {isLoading && <p className="text-sm text-muted-foreground text-center py-10">불러오는 중...</p>}
-        {isError && (
-          <div className="text-center py-10">
-            <p className="text-sm text-rose-600">조회 실패</p>
-            <button onClick={() => refetch()} className="mt-2 text-xs text-primary underline">다시 시도</button>
-          </div>
-        )}
+        {isLoading && <ConsultationListSkeleton count={5} />}
+        {isError && <ErrorState error={error} onRetry={refetch} context="인박스 조회 실패" />}
         {!isLoading && !isError && filtered.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-10">표시할 상담 건이 없습니다.</p>
         )}

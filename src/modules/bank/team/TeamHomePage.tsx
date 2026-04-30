@@ -27,6 +27,8 @@ import {
 } from "../types";
 import { NewCustomerSheet } from "../customers/NewCustomerSheet";
 import { ProfileSheet } from "../profile/ProfileSheet";
+import { ErrorState } from "@/shell/ui/ErrorState";
+import { KpiGridSkeleton, MemberRowSkeleton, ConsultationRowSkeleton } from "@/shell/ui/Skeleton";
 
 const STAGE_WARN_DAYS: Partial<Record<LoanStatus, number>> = {
   apply: 3,
@@ -43,7 +45,7 @@ export default function TeamHomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [complexFilter, setComplexFilter] = useState<string>("ALL");
 
-  const { data: rows = [], isLoading } = useQuery<Consultation[]>({
+  const { data: rows = [], isLoading, isError, error, refetch } = useQuery<Consultation[]>({
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
@@ -133,10 +135,28 @@ export default function TeamHomePage() {
 
       <div className="px-4 py-4 space-y-4 pb-8">
         {isLoading && (
-          <p className="text-sm text-muted-foreground text-center py-10">불러오는 중...</p>
+          <>
+            <KpiGridSkeleton />
+            <section className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+              </div>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={i > 0 ? "border-t border-border" : ""}>
+                  <MemberRowSkeleton />
+                </div>
+              ))}
+            </section>
+            <div className="space-y-2">
+              <ConsultationRowSkeleton />
+              <ConsultationRowSkeleton />
+            </div>
+          </>
         )}
 
-        {!isLoading && (
+        {isError && <ErrorState error={error} onRetry={refetch} context="팀 데이터 조회 실패" />}
+
+        {!isLoading && !isError && (
           <>
             {/* KPI 4종 */}
             <section className="grid grid-cols-2 gap-2">

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Scale,
   Receipt,
+  PenLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/shell/api/client";
@@ -20,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { STAGE_LABEL, STAGE_TONE, type Consultation, type LoanStatus } from "../types";
 import { formatWon, maskRrn, formatDateKo } from "../format";
 import { TaskBox, DDayBadges } from "./TaskBox";
+import { ErrorState } from "@/shell/ui/ErrorState";
+import { DetailHeaderSkeleton } from "@/shell/ui/Skeleton";
 
 const STAGE_ORDER: LoanStatus[] = [
   "apply",
@@ -37,7 +40,7 @@ export default function InboxDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const { data, isLoading, isError } = useQuery<Consultation>({
+  const { data, isLoading, isError, error, refetch } = useQuery<Consultation>({
     queryKey: ["consultation", id],
     queryFn: () => api.get<Consultation>(`/consultation/${id}`),
     enabled: !!id,
@@ -60,7 +63,10 @@ export default function InboxDetail() {
     return (
       <>
         <PageHeader title="상세" />
-        <p className="text-sm text-muted-foreground text-center py-10">불러오는 중...</p>
+        <div className="px-4 py-4 space-y-4">
+          <DetailHeaderSkeleton />
+          <DetailHeaderSkeleton />
+        </div>
       </>
     );
   }
@@ -68,7 +74,7 @@ export default function InboxDetail() {
     return (
       <>
         <PageHeader title="상세" />
-        <p className="text-sm text-rose-600 text-center py-10">조회에 실패했습니다.</p>
+        <ErrorState error={error || new Error("상담을 찾을 수 없습니다")} onRetry={refetch} context="상담 상세 조회" />
       </>
     );
   }
@@ -218,6 +224,31 @@ export default function InboxDetail() {
                         : data.signing_selected_date
                         ? "고객이 시간 선택 — 확정 필요"
                         : "캘린더 공개·관리"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+
+              <div className="border-t border-border" />
+            </>
+          )}
+
+          {status === "signing" && (
+            <>
+              <button
+                onClick={() => statusMutation.mutate("executing")}
+                disabled={statusMutation.isPending}
+                className="w-full flex items-center justify-between p-4 active:bg-accent disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center">
+                    <PenLine className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-foreground">자서 완료 처리</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {statusMutation.isPending ? "처리 중..." : "자서 완료 → 실행 단계로 진행"}
                     </p>
                   </div>
                 </div>
