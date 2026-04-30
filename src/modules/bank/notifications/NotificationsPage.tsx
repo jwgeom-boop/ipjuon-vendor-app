@@ -7,6 +7,7 @@ import { PageHeader } from "@/shell/layout/PageHeader";
 import { PushSettingsCard } from "@/shell/push/PushSettingsCard";
 import { deriveInterventionQueue } from "../intervention/intervention";
 import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
+import { EmptyState } from "@/shell/ui/EmptyState";
 import type { Consultation } from "../types";
 
 type NotificationItem = {
@@ -101,10 +102,11 @@ export default function NotificationsPage() {
 
         {isLoading && <p className="text-sm text-muted-foreground text-center py-10">불러오는 중...</p>}
         {!isLoading && items.length === 0 && (
-          <div className="text-center py-16">
-            <Bell className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">새 알림이 없습니다.</p>
-          </div>
+          <EmptyState
+            emoji="🔔"
+            title="새 알림이 없습니다"
+            description="입주민이 메시지를 보내거나 신청서·자서일 등을 변경하면 여기에 표시됩니다."
+          />
         )}
         {items.map((it) => {
           const meta = TYPE_META[it.type];

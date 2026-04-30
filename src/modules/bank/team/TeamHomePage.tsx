@@ -30,6 +30,8 @@ import { ProfileSheet } from "../profile/ProfileSheet";
 import { ErrorState } from "@/shell/ui/ErrorState";
 import { KpiGridSkeleton, MemberRowSkeleton, ConsultationRowSkeleton } from "@/shell/ui/Skeleton";
 import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
+import { QuickActionsFab } from "@/shell/ui/QuickActionsFab";
+import { GreetingWidget } from "./GreetingWidget";
 
 const STAGE_WARN_DAYS: Partial<Record<LoanStatus, number>> = {
   apply: 3,
@@ -162,6 +164,9 @@ export default function TeamHomePage() {
 
         {!isLoading && !isError && (
           <>
+            {/* 인사말 위젯 */}
+            <GreetingWidget rows={scoped} />
+
             {/* KPI 4종 */}
             <section className="grid grid-cols-2 gap-2">
               <KpiCard
@@ -296,12 +301,15 @@ export default function TeamHomePage() {
             {/* 오늘 일정 */}
             {todaySchedule.length > 0 && (
               <section className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <button
+                  onClick={() => navigate("/today-timeline")}
+                  className="w-full px-4 py-3 border-b border-border flex items-center justify-between active:bg-accent"
+                >
                   <p className="text-sm font-bold text-foreground">오늘 일정</p>
                   <span className="text-[10.5px] text-muted-foreground tabular-nums">
-                    자서 {stats.signingToday} · 실행 {stats.executionToday}
+                    자서 {stats.signingToday} · 실행 {stats.executionToday} · 타임라인 →
                   </span>
-                </div>
+                </button>
                 {todaySchedule.slice(0, 6).map((t, i) => (
                   <button
                     key={t.id}
@@ -395,6 +403,7 @@ export default function TeamHomePage() {
 
       <NewCustomerSheet open={newCustomerOpen} onClose={() => setNewCustomerOpen(false)} />
       <ProfileSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <QuickActionsFab onNewCustomer={() => setNewCustomerOpen(true)} />
     </div>
   );
 }

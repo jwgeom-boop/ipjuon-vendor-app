@@ -15,6 +15,10 @@ import { ProfileSheet } from "../profile/ProfileSheet";
 import { ErrorState } from "@/shell/ui/ErrorState";
 import { ConsultationListSkeleton } from "@/shell/ui/Skeleton";
 import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
+import { EmptyState } from "@/shell/ui/EmptyState";
+import { QuickActionsFab } from "@/shell/ui/QuickActionsFab";
+import { PipelineStrip } from "./PipelineStrip";
+import { Button } from "@/components/ui/button";
 
 const STAGE_FILTERS: Array<{ key: LoanStatus | "all"; label: string }> = [
   { key: "all", label: "전체" },
@@ -189,12 +193,32 @@ export default function InboxList() {
 
       <NewCustomerSheet open={newCustomerOpen} onClose={() => setNewCustomerOpen(false)} />
       <ProfileSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <QuickActionsFab onNewCustomer={() => setNewCustomerOpen(true)} />
 
       <div className="px-3 py-3 space-y-2">
         {isLoading && <ConsultationListSkeleton count={5} />}
         {isError && <ErrorState error={error} onRetry={refetch} context="인박스 조회 실패" />}
         {!isLoading && !isError && filtered.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-10">표시할 상담 건이 없습니다.</p>
+          <EmptyState
+            emoji={search || stage !== "all" || kpiFilter ? "🔍" : "📭"}
+            title={
+              search || stage !== "all" || kpiFilter
+                ? "조건에 맞는 상담 건이 없습니다"
+                : "아직 상담 건이 없습니다"
+            }
+            description={
+              search || stage !== "all" || kpiFilter
+                ? "필터를 초기화하거나 다른 조건으로 검색해보세요."
+                : "신규 고객 등록 또는 입주민 앱에서 동의서가 도착하면 여기에 표시됩니다."
+            }
+            action={
+              !search && stage === "all" && !kpiFilter ? (
+                <Button onClick={() => setNewCustomerOpen(true)} size="sm">
+                  + 신규 고객 등록
+                </Button>
+              ) : undefined
+            }
+          />
         )}
         {filtered.map((row) => (
           <ConsultationRow
@@ -273,9 +297,12 @@ function ConsultationRow({
             </p>
           )}
         </div>
-        <Badge variant="outline" className={cn("flex-shrink-0 text-[10px] px-2 py-0 h-5", STAGE_TONE[status])}>
-          {STAGE_LABEL[status]}
-        </Badge>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <Badge variant="outline" className={cn("text-[10px] px-2 py-0 h-5", STAGE_TONE[status])}>
+            {STAGE_LABEL[status]}
+          </Badge>
+          <PipelineStrip status={status} size="xs" />
+        </div>
       </div>
       {row.loan_amount ? (
         <p className="text-[12px] text-foreground mt-1.5">

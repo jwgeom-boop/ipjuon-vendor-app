@@ -6,12 +6,14 @@ import { api } from "@/shell/api/client";
 import { useAuth } from "@/shell/auth/AuthContext";
 import { PageHeader } from "@/shell/layout/PageHeader";
 import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
+import { EmptyState } from "@/shell/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import type { Consultation } from "../types";
 import {
   deriveInterventionQueue,
   groupByTone,
   TONE_META,
+  formatSla,
   type InterventionTone,
 } from "./intervention";
 
@@ -57,7 +59,7 @@ export default function InterventionPage() {
     );
   }
 
-  const toneOrder: InterventionTone[] = ["cancel", "execution", "delayed", "intake"];
+  const toneOrder: InterventionTone[] = ["cancel", "execution", "delayed", "no_contact", "intake"];
 
   return (
     <>
@@ -92,13 +94,11 @@ export default function InterventionPage() {
 
         {/* 빈 상태 */}
         {items.length === 0 && (
-          <section className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-6 text-center">
-            <p className="text-3xl mb-2">✨</p>
-            <p className="text-sm font-bold text-emerald-900">개입 필요 항목 없음</p>
-            <p className="text-[11.5px] text-emerald-700 mt-1">
-              모든 진행 건이 정상 흐름에 있습니다.
-            </p>
-          </section>
+          <EmptyState
+            emoji="✨"
+            title="개입 필요 항목 없음"
+            description="모든 진행 건이 정상 흐름에 있습니다. 새로운 위험 신호가 감지되면 여기에 표시됩니다."
+          />
         )}
 
         {/* 카테고리별 섹션 */}
@@ -138,10 +138,16 @@ export default function InterventionPage() {
                       {it.manager && (
                         <span className="text-[10.5px] text-foreground/60">· {it.manager}</span>
                       )}
+                      {it.slaHours != null && (
+                        <span className="ml-auto text-[10px] text-foreground/55 tabular-nums whitespace-nowrap">
+                          {formatSla(it.slaHours)}
+                        </span>
+                      )}
                       <span
                         className={cn(
-                          "ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-bold border bg-white/80",
-                          meta.text
+                          "text-[10px] px-1.5 py-0.5 rounded-full font-bold border bg-white/80",
+                          meta.text,
+                          it.slaHours == null && "ml-auto"
                         )}
                       >
                         {it.label}

@@ -2,13 +2,14 @@ import type { Consultation, LoanStatus } from "../types";
 import { daysUntil, ddayLabel } from "../format";
 import { STAGE_LABEL } from "../types";
 
-export type InterventionTone = "delayed" | "execution" | "cancel" | "intake";
+export type InterventionTone = "delayed" | "execution" | "cancel" | "no_contact" | "intake";
 
 export type InterventionItem = Consultation & {
   tone: InterventionTone;
   label: string;
   reason: string;
   priority: number; // 낮을수록 위
+  slaHours?: number; // 마지막 액션 후 경과 시간 (있으면 SLA 표시)
 };
 
 export const STAGE_WARN_DAYS: Partial<Record<LoanStatus, number>> = {
@@ -19,14 +20,29 @@ export const STAGE_WARN_DAYS: Partial<Record<LoanStatus, number>> = {
   signing_reservation: 5,
 };
 
+function hoursSince(iso?: string | null): number | undefined {
+  if (!iso) return undefined;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return undefined;
+  return Math.floor((Date.now() - t) / 3_600_000);
+}
+
+export function formatSla(hours?: number): string {
+  if (hours == null) return "";
+  if (hours < 1) return "방금";
+  if (hours < 24) return `${hours}시간 경과`;
+  return `${Math.floor(hours / 24)}일 경과`;
+}
+
 /**
- * 개입 필요 큐 — 정체·실행임박·취소요청·미상담 건들 수집.
- * 우선순위:
- *   0: 입주민 취소요청 (즉시 응답 필요)
+ * 개입 필요 큐 — 정체·실행임박·취소요청·연락두절·미상담 건들 수집.
+ * 우선순위 (낮을수록 상단):
+ *   0: 입주민 취소요청 (즉시 응답)
  *   1: 실행 임박 (D-1 / 경과)
  *   2: 자서 임박
  *   3: 정체 (단계별 임계치 + 2일)
- *   4: 미상담 (apply 단계 3일+)
+ *   4: 연락 두절 (입주민 마지막 활동 14일+)
+ *   5: 미상담 (apply 단계 3일+)
  */
 export function deriveInterventionQueue(rows: Consultation[]): InterventionItem[] {
   const out: InterventionItem[] = [];
@@ -41,6 +57,7 @@ export function deriveInterventionQueue(rows: Consultation[]): InterventionItem[
         label: "취소요청",
         reason: "입주민이 앱에서 취소 요청 — 즉시 확인 필요",
         priority: 0,
+        slaHours: hoursSince(r.stage_changed_at),
       });
       continue;
     }
@@ -93,6 +110,26 @@ export function deriveInterventionQueue(rows: Consultation[]): InterventionItem[
           label: "지연",
           reason: `${STAGE_LABEL[status]} 단계 ${dwell}일 정체 (임계 ${warnAt}일)`,
           priority: 3,
+          slaHours: dwell * 24,
+        });
+        continue;
+      }
+    }
+
+    // 연락 두절 — 진행 중이면서 입주민 마지막 액션이 14일+ 전
+    const ACTIVE: LoanStatus[] = ["consulting", "reviewing", "result", "signing_reservation"];
+    if (ACTIVE.includes(status) && r.resident_last_action_at) {
+      const days = Math.floor(
+        (Date.now() - new Date(r.resident_last_action_at).getTime()) / 86_400_000
+      );
+      if (days >= 14) {
+        out.push({
+          ...r,
+          tone: "no_contact",
+          label: "연락두절",
+          reason: `입주민 마지막 활동 ${days}일 전 — 재연락 권장`,
+          priority: 4,
+          slaHours: days * 24,
         });
         continue;
       }
@@ -109,12 +146,17 @@ export function deriveInterventionQueue(rows: Consultation[]): InterventionItem[
           tone: "intake",
           label: "미상담",
           reason: `신청 ${dwell}일 경과 — 첫 컨택 필요`,
-          priority: 4,
+          priority: 5,
+          slaHours: dwell * 24,
         });
       }
     }
   }
-  return out.sort((a, b) => a.priority - b.priority);
+  // 우선순위 → SLA 긴 순
+  return out.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return (b.slaHours ?? 0) - (a.slaHours ?? 0);
+  });
 }
 
 export function groupByTone(items: InterventionItem[]): Record<InterventionTone, InterventionItem[]> {
@@ -122,6 +164,7 @@ export function groupByTone(items: InterventionItem[]): Record<InterventionTone,
     cancel: [],
     execution: [],
     delayed: [],
+    no_contact: [],
     intake: [],
   };
   for (const it of items) {
@@ -157,6 +200,14 @@ export const TONE_META: Record<
     border: "border-orange-300",
     text: "text-orange-900",
     icon: "text-orange-600",
+  },
+  no_contact: {
+    label: "연락 두절",
+    emoji: "📵",
+    bg: "bg-slate-100",
+    border: "border-slate-300",
+    text: "text-slate-900",
+    icon: "text-slate-600",
   },
   intake: {
     label: "미상담",

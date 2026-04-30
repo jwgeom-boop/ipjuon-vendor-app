@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Consultation } from "../types";
+import { ResidentDocStatus } from "./ResidentDocStatus";
 
 type SigningInfo = Consultation & {
   signing_window_start?: string | null;
@@ -183,6 +184,9 @@ export default function SigningSchedulePage() {
     <>
       <PageHeader title="자서 일정" />
       <div className="px-4 py-4 space-y-4 pb-8">
+        {/* 입주민 서류 준비 상태 — 자서 임박 시 가장 먼저 봐야 할 정보 */}
+        <ResidentDocStatus data={data} />
+
         {/* 확정됨 */}
         {confirmedAt && (
           <section className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4">
