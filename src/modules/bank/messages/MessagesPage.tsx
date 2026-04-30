@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
+import { TemplatesSheet } from "./TemplatesSheet";
 import { api, ApiError } from "@/shell/api/client";
 import { PageHeader } from "@/shell/layout/PageHeader";
 import { useAuth } from "@/shell/auth/AuthContext";
@@ -15,6 +16,7 @@ export default function MessagesPage() {
   const { auth } = useAuth();
   const qc = useQueryClient();
   const [text, setText] = useState("");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery<Consultation>({
@@ -91,6 +93,15 @@ export default function MessagesPage() {
 
       <div className="border-t border-border bg-card p-2 safe-bottom">
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTemplatesOpen(true)}
+            disabled={sendMutation.isPending}
+            className="w-11 h-11 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground active:bg-accent flex-shrink-0"
+            aria-label="템플릿"
+            title="자주 쓰는 문구"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
           <Input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -107,13 +118,19 @@ export default function MessagesPage() {
           <button
             onClick={handleSend}
             disabled={!text.trim() || sendMutation.isPending}
-            className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40"
+            className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 flex-shrink-0"
             aria-label="전송"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
+
+      <TemplatesSheet
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onPick={(body) => setText((curr) => (curr ? `${curr}\n${body}` : body))}
+      />
     </div>
   );
 }

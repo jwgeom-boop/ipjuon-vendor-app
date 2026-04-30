@@ -18,7 +18,9 @@ import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefre
 import { EmptyState } from "@/shell/ui/EmptyState";
 import { QuickActionsFab } from "@/shell/ui/QuickActionsFab";
 import { PipelineStrip } from "./PipelineStrip";
+import { PinIndicator } from "./PinButton";
 import { Button } from "@/components/ui/button";
+import { readPinnedIds } from "@/shell/storage/userPrefs";
 
 const STAGE_FILTERS: Array<{ key: LoanStatus | "all"; label: string }> = [
   { key: "all", label: "전체" },
@@ -68,6 +70,8 @@ export default function InboxList() {
     return ["ALL", ...Array.from(set).sort()];
   }, [data]);
 
+  const pinnedIds = useMemo(() => readPinnedIds(auth?.loginId), [auth?.loginId, data]);
+
   const filtered = useMemo(() => {
     let rows = data ?? [];
     if (isManager && assigneeFilter !== "ALL") {
@@ -88,11 +92,16 @@ export default function InboxList() {
       );
     }
     return rows.sort((a, b) => {
+      // 핀된 항목 최상단
+      const aPinned = pinnedIds.has(a.id);
+      const bPinned = pinnedIds.has(b.id);
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+      // 그 외는 최근 단계 변경순
       const at = a.stage_changed_at || a.created_at || "";
       const bt = b.stage_changed_at || b.created_at || "";
       return bt.localeCompare(at);
     });
-  }, [data, stage, search, kpiFilter, assigneeFilter, isManager]);
+  }, [data, stage, search, kpiFilter, assigneeFilter, isManager, pinnedIds]);
 
   function changeAssignee(v: string) {
     setAssigneeFilter(v);
@@ -272,6 +281,7 @@ function ConsultationRow({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
+            <PinIndicator consultationId={row.id} />
             <p className="text-[15px] font-semibold text-foreground truncate">{row.resident_name}</p>
             {hasResidentAction && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" aria-label="신규" />}
             {showAssignee && row.manager && (

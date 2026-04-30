@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { STAGE_LABEL, STAGE_TONE, type Consultation, type LoanStatus } from "../types";
 import { formatWon, maskRrn, formatDateKo } from "../format";
 import { TaskBox, DDayBadges } from "./TaskBox";
+import { PinButton } from "./PinButton";
+import { PersonalNoteCard } from "./PersonalNoteCard";
 import { ErrorState } from "@/shell/ui/ErrorState";
 import { DetailHeaderSkeleton } from "@/shell/ui/Skeleton";
 
@@ -89,7 +91,7 @@ export default function InboxDetail() {
 
   return (
     <>
-      <PageHeader title={data.resident_name} />
+      <PageHeader title={data.resident_name} right={<PinButton consultationId={data.id} />} />
 
       <div className="px-4 py-4 space-y-4">
         {/* 기본 카드 */}
@@ -172,13 +174,16 @@ export default function InboxDetail() {
           </section>
         )}
 
-        {/* 메모 */}
+        {/* 메모 (공용) */}
         {data.memo && (
           <section className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-[11px] font-medium text-amber-700 mb-1">🔖 메모</p>
+            <p className="text-[11px] font-medium text-amber-700 mb-1">🔖 메모 (공용)</p>
             <p className="text-[13px] text-amber-900 whitespace-pre-wrap">{data.memo}</p>
           </section>
         )}
+
+        {/* 개인 메모 (본인만) */}
+        <PersonalNoteCard consultationId={data.id} />
 
         {/* 액션 카드들 */}
         <section className="rounded-xl border border-border bg-card overflow-hidden">
