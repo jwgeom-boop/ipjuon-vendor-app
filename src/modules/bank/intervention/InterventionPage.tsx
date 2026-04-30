@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronRight, Users } from "lucide-react";
 import { api } from "@/shell/api/client";
 import { useAuth } from "@/shell/auth/AuthContext";
 import { PageHeader } from "@/shell/layout/PageHeader";
+import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
 import { cn } from "@/lib/utils";
 import type { Consultation } from "../types";
 import {
@@ -21,10 +22,12 @@ export default function InterventionPage() {
 
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
 
-  const { data, isLoading } = useQuery<Consultation[]>({
+  const { data, isLoading, refetch } = useQuery<Consultation[]>({
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
+
+  const { pulling, refreshing } = usePullToRefresh(() => refetch());
 
   const memberNames = useMemo(() => {
     if (!isManager) return [];
@@ -58,6 +61,7 @@ export default function InterventionPage() {
 
   return (
     <>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} />
       <PageHeader title={isManager ? "내가 챙길 것" : "개입 큐"} />
       <div className="px-4 py-4 space-y-4 pb-8">
         <p className="text-[11px] text-muted-foreground">

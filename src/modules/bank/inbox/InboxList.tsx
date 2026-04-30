@@ -14,6 +14,7 @@ import { NewCustomerSheet } from "../customers/NewCustomerSheet";
 import { ProfileSheet } from "../profile/ProfileSheet";
 import { ErrorState } from "@/shell/ui/ErrorState";
 import { ConsultationListSkeleton } from "@/shell/ui/Skeleton";
+import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
 
 const STAGE_FILTERS: Array<{ key: LoanStatus | "all"; label: string }> = [
   { key: "all", label: "전체" },
@@ -46,6 +47,8 @@ export default function InboxList() {
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
+
+  const { pulling, refreshing } = usePullToRefresh(() => refetch());
 
   // URL search param 동기화 (팀 홈에서 팀원 선택 → 인박스로 진입 시 반영)
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function InboxList() {
 
   return (
     <div>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} />
       <header className="sticky top-0 z-20 bg-card border-b border-border safe-top">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
@@ -205,6 +209,21 @@ export default function InboxList() {
   );
 }
 
+type LastMessage = { by: string; text: string; at: string } | null;
+
+function getLastMessage(b2cMessages?: string): LastMessage {
+  if (!b2cMessages) return null;
+  try {
+    const parsed = JSON.parse(b2cMessages);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const last = parsed[parsed.length - 1];
+    if (!last?.text) return null;
+    return last as LastMessage;
+  } catch {
+    return null;
+  }
+}
+
 function ConsultationRow({
   row,
   showAssignee,
@@ -216,6 +235,11 @@ function ConsultationRow({
 }) {
   const status = (row.loan_status ?? "apply") as LoanStatus;
   const hasResidentAction = !!row.resident_last_action_at;
+  const lastMessage = getLastMessage(row.b2c_messages);
+  // 7일 내 메시지만 미리보기 (그 이상은 너무 오래됨)
+  const isRecent = lastMessage
+    ? Date.now() - new Date(lastMessage.at).getTime() < 7 * 86_400_000
+    : false;
   return (
     <button
       onClick={onClick}
@@ -238,6 +262,15 @@ function ConsultationRow({
           </p>
           {row.memo && (
             <p className="text-[11px] text-amber-700 mt-1 line-clamp-1">🔖 {row.memo}</p>
+          )}
+          {isRecent && lastMessage && (
+            <p className="text-[11.5px] text-blue-700 mt-1 line-clamp-1 flex items-center gap-1">
+              <span className="text-[10px]">💬</span>
+              <span className="font-medium">
+                {lastMessage.by === "resident" ? row.resident_name : "나"}:
+              </span>
+              <span className="text-foreground/80">{lastMessage.text}</span>
+            </p>
           )}
         </div>
         <Badge variant="outline" className={cn("flex-shrink-0 text-[10px] px-2 py-0 h-5", STAGE_TONE[status])}>

@@ -6,6 +6,7 @@ import { api } from "@/shell/api/client";
 import { PageHeader } from "@/shell/layout/PageHeader";
 import { PushSettingsCard } from "@/shell/push/PushSettingsCard";
 import { deriveInterventionQueue } from "../intervention/intervention";
+import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
 import type { Consultation } from "../types";
 
 type NotificationItem = {
@@ -28,10 +29,12 @@ const TYPE_META: Record<NotificationItem["type"], { icon: typeof Bell; bg: strin
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const { data, isLoading } = useQuery<Consultation[]>({
+  const { data, isLoading, refetch } = useQuery<Consultation[]>({
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
+
+  const { pulling, refreshing } = usePullToRefresh(() => refetch());
 
   const interventionCount = useMemo(() => {
     return data ? deriveInterventionQueue(data).length : 0;
@@ -72,6 +75,7 @@ export default function NotificationsPage() {
 
   return (
     <div>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} />
       <PageHeader title="알림" showBack={false} />
       <div className="px-3 py-3 space-y-2">
         <PushSettingsCard />

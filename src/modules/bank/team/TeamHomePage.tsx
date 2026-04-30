@@ -29,6 +29,7 @@ import { NewCustomerSheet } from "../customers/NewCustomerSheet";
 import { ProfileSheet } from "../profile/ProfileSheet";
 import { ErrorState } from "@/shell/ui/ErrorState";
 import { KpiGridSkeleton, MemberRowSkeleton, ConsultationRowSkeleton } from "@/shell/ui/Skeleton";
+import { usePullToRefresh, PullToRefreshIndicator } from "@/shell/ui/PullToRefresh";
 
 const STAGE_WARN_DAYS: Partial<Record<LoanStatus, number>> = {
   apply: 3,
@@ -49,6 +50,8 @@ export default function TeamHomePage() {
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
+
+  const { pulling, refreshing } = usePullToRefresh(() => refetch());
 
   const complexes = useMemo(() => {
     const set = new Set<string>();
@@ -78,6 +81,7 @@ export default function TeamHomePage() {
 
   return (
     <div>
+      <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} />
       <header className="sticky top-0 z-20 bg-card border-b border-border safe-top">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
