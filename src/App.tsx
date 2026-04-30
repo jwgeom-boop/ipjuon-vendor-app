@@ -21,6 +21,7 @@ import ComplexProfilesPage from "@/modules/bank/complex/ComplexProfilesPage";
 import RepaymentSharePage from "@/modules/bank/share/RepaymentSharePage";
 import LegalAgentSharePage from "@/modules/bank/share/LegalAgentSharePage";
 import TeamHomePage from "@/modules/bank/team/TeamHomePage";
+import InterventionPage from "@/modules/bank/intervention/InterventionPage";
 
 function HomeRedirect() {
   const { auth } = useAuth();
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/profile/password" element={<ChangePasswordPage />} />
               <Route path="/performance" element={<PerformancePage />} />
               <Route path="/complex-profiles" element={<ComplexProfilesPage />} />
+              <Route path="/intervention" element={<InterventionPage />} />
             </Route>
 
             <Route element={<RequireAuth><FullScreenShell /></RequireAuth>}>

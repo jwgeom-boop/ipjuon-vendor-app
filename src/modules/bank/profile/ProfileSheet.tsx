@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, User, KeyRound, BarChart3, Building2, LogOut, ChevronRight, Users, Inbox } from "lucide-react";
+import { X, User, KeyRound, BarChart3, Building2, LogOut, ChevronRight, Users, Inbox, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/shell/auth/AuthContext";
 
 type Props = {
@@ -56,6 +56,14 @@ export function ProfileSheet({ open, onClose }: Props) {
               <MenuItem icon={Users} label="팀 홈" onClick={() => go("/team")} />
               <Divider />
               <MenuItem icon={Inbox} label="전체 상담 (팀)" onClick={() => go("/inbox")} />
+              <Divider />
+              <MenuItem icon={AlertTriangle} label="내가 챙길 것" onClick={() => go("/intervention")} />
+              <Divider />
+            </>
+          )}
+          {auth?.bankRole !== "bank_manager" && (
+            <>
+              <MenuItem icon={AlertTriangle} label="개입 큐" onClick={() => go("/intervention")} />
               <Divider />
             </>
           )}

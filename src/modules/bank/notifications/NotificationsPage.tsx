@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, FileText, MessageSquare, Calendar, FileCheck2, CheckCircle2 } from "lucide-react";
+import { Bell, FileText, MessageSquare, Calendar, FileCheck2, CheckCircle2, AlertTriangle, ChevronRight } from "lucide-react";
 import { api } from "@/shell/api/client";
 import { PageHeader } from "@/shell/layout/PageHeader";
 import { PushSettingsCard } from "@/shell/push/PushSettingsCard";
+import { deriveInterventionQueue } from "../intervention/intervention";
 import type { Consultation } from "../types";
 
 type NotificationItem = {
@@ -31,6 +32,10 @@ export default function NotificationsPage() {
     queryKey: ["bank-consultations"],
     queryFn: () => api.get<Consultation[]>("/bank/consultations"),
   });
+
+  const interventionCount = useMemo(() => {
+    return data ? deriveInterventionQueue(data).length : 0;
+  }, [data]);
 
   const items = useMemo<NotificationItem[]>(() => {
     if (!data) return [];
@@ -70,6 +75,26 @@ export default function NotificationsPage() {
       <PageHeader title="알림" showBack={false} />
       <div className="px-3 py-3 space-y-2">
         <PushSettingsCard />
+
+        {/* 개입 큐 진입 카드 */}
+        {interventionCount > 0 && (
+          <button
+            onClick={() => navigate("/intervention")}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-rose-200 bg-rose-50 active:bg-rose-100 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-rose-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-rose-900">내가 챙길 것</p>
+              <p className="text-[11.5px] text-rose-700 mt-0.5">
+                개입 필요 건 <span className="font-bold tabular-nums">{interventionCount}</span>건 — 취소요청·실행임박·정체·미상담
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-rose-600 flex-shrink-0" />
+          </button>
+        )}
+
         {isLoading && <p className="text-sm text-muted-foreground text-center py-10">불러오는 중...</p>}
         {!isLoading && items.length === 0 && (
           <div className="text-center py-16">

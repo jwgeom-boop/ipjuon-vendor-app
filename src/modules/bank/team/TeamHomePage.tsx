@@ -357,14 +357,12 @@ export default function TeamHomePage() {
                     </button>
                   );
                 })}
-                {interventionQueue.length > 4 && (
-                  <button
-                    onClick={() => navigate("/notifications")}
-                    className="w-full px-4 py-2.5 text-[12px] text-rose-700 font-medium border-t border-rose-200"
-                  >
-                    전체 {interventionQueue.length}건 보기 →
-                  </button>
-                )}
+                <button
+                  onClick={() => navigate("/intervention")}
+                  className="w-full px-4 py-2.5 text-[12px] text-rose-700 font-medium border-t border-rose-200"
+                >
+                  {interventionQueue.length > 4 ? `전체 ${interventionQueue.length}건 보기 →` : "상세 보기 →"}
+                </button>
               </section>
             )}
           </>
